@@ -30,7 +30,9 @@ import com.android.server.telecom.BluetoothAdapterProxy;
 import com.android.server.telecom.BluetoothHeadsetProxy;
 import com.android.server.telecom.TelecomSystem;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -68,6 +70,7 @@ public class BluetoothDeviceManager {
                             mBluetoothHeadsetService = null;
                             Log.i(BluetoothDeviceManager.this, "Lost BluetoothHeadset service. " +
                                     "Removing all tracked devices.");
+                            mBluetoothRouteManager.onActiveDeviceChanged(null);
                             List<BluetoothDevice> devicesToRemove = new LinkedList<>(
                                     mConnectedDevicesByAddress.values());
                             mConnectedDevicesByAddress.clear();
@@ -103,11 +106,16 @@ public class BluetoothDeviceManager {
     }
 
     public int getNumConnectedDevices() {
-        return mConnectedDevicesByAddress.size();
+        synchronized (mLock) {
+            return mConnectedDevicesByAddress.size();
+        }
     }
 
     public Collection<BluetoothDevice> getConnectedDevices() {
-        return mConnectedDevicesByAddress.values();
+        synchronized (mLock) {
+            return Collections.unmodifiableCollection(
+                    new ArrayList<>(mConnectedDevicesByAddress.values()));
+        }
     }
 
     public String getMostRecentlyConnectedDevice(String excludeAddress) {
@@ -131,7 +139,9 @@ public class BluetoothDeviceManager {
     }
 
     public BluetoothDevice getDeviceFromAddress(String address) {
-        return mConnectedDevicesByAddress.get(address);
+        synchronized (mLock) {
+            return mConnectedDevicesByAddress.get(address);
+        }
     }
 
     void onDeviceConnected(BluetoothDevice device) {
